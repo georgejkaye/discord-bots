@@ -4,6 +4,7 @@ import glob
 import os
 
 client = discord.Client()
+emoji = client.get_emoji(689266841025380359)
 
 agda = ''
 
@@ -25,6 +26,9 @@ async def on_message(message):
         return
 
     if message.content.startswith('$agda'):
+
+        await message.add_reaction(client.get_emoji(689266841025380359))
+
         await message.channel.send('I am the Agda Guru.')
 
         content = message.content[6:]
