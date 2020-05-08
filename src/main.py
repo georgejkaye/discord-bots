@@ -6,6 +6,9 @@ import os
 client = discord.Client()
 emoji = client.get_emoji(689266841025380359)
 
+with open ('token') as tokenfile :
+    token = tokenfile.read()
+
 agda = ''
 
 for root, dirs, files in os.walk('../../agda-stdlib/src') :
@@ -64,4 +67,4 @@ async def on_message(message):
         content = message.content.decode("utf8");      
         await message.channel.send('You are in the **darkest** timeline...')
 
-client.run('NzA4MDYzNjAwMDg1ODI3NTk1.XrR50Q.Kq2dh4iXO5fQL_HPLzXmwXWKyIo ')
+client.run(token)
