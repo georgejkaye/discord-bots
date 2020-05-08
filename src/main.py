@@ -6,17 +6,24 @@ import os
 client = discord.Client()
 emoji = client.get_emoji(689266841025380359)
 
+# Get the secret token from the token file
 with open ('token') as tokenfile :
     token = tokenfile.read()
 
-agda = ''
+agda = []
 
+# Get the entire standard library
 for root, dirs, files in os.walk('../../agda-stdlib/src') :
     for file in files :
         if file.endswith('.agda') :
             with open(os.path.join(root,file), 'rt') as current :
                 print (os.path.join(root,file))
-                agda = agda + current.read()
+
+                module = os.path.join(root,file)[22:-5].replace('/','.')
+                agda.append((module, current.read()))
+
+for module in agda :
+    print(module[0])
 
 @client.event
 async def on_ready():
@@ -45,19 +52,42 @@ async def on_message(message):
         if content == "+" :
             await message.channel.send('```agda\n_+_ : ℕ → ℕ → ℕ\nzero     + y = y\n(succ x) + y = succ(x + y)```')    
 
-
-
-        pattern = r"\n(" + re.escape(content) + r" : (.+\n.+)*)\n\n"
+        pattern = r"(" + re.escape(content) + r" : (.+\n)*)"
         print (pattern)
 
         regex = re.compile(pattern)
 
-        result = re.search(regex, agda)
+        matches = []
 
-        print (result)
+        for module in agda :
 
-        if(result is not None) :
-            await message.channel.send('```agda\n' + result.group(1) + '```')    
+            result = []
+
+            result = re.search(regex, module[1])
+
+            if (result is not None) :
+
+                match = result.group(1)
+
+                print("Found a match in " + module[0] + ":\n\n" + match)
+                matches.append((module[0], match))
+
+            else :
+                print("No matches in " + module[0])
+
+        if(len(matches) > 0) :
+
+            print ("Matches!")
+
+            await message.channel.send("Found " + str(len(matches)) + " matches")
+
+            for match in matches :
+                print (match)
+                reply = 'In `' + match[0] + '`:\n```agda\n' + match[1] + '```'
+                await message.channel.send(reply)
+
+        else :
+            await message.channel.send("I couldn't find anything!")
 
     if message.content.startswith('$proof'):
         await message.channel.send('```agda\npostulate proof : n > succ n\n```')
