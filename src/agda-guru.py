@@ -63,7 +63,7 @@ async def on_message(message):
 
         for module in agda :
 
-            if(not target or module[0] == targetmodule) :
+            if(not target or targetmodule in module[0]) :
 
                 result = []
 
@@ -87,13 +87,10 @@ async def on_message(message):
 
             matchtext = ''
 
-            if not target :
-                if len(matches) == 1 :
-                    matchtext = "Found a match!"
-                else :
-                    matchtext = "Found " + str(len(matches)) + " matches!"
-            else :
+            if len(matches) == 1 :
                 matchtext = "Found a match!"
+            else :
+                matchtext = "Found " + str(len(matches)) + " matches!"
 
             await message.channel.send(matchtext)
 
