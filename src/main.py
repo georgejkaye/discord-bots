@@ -43,16 +43,18 @@ async def on_message(message):
 
         content = message.content[6:]
 
-        if content == 'nat' or content == "Nat" or content == "N" :
-            await message.channel.send('```agda\ndata ℕ : Set where\n\tzero : ℕ\n\tsucc : ℕ → ℕ```')    
+        args = content.split()
 
-        if content == "Bool" :
-            await message.channel.send('```agda\ndata Bool : Set where\n\ttrue : Bool\n\tfalse : Bool```')    
+        target = False
 
-        if content == "+" :
-            await message.channel.send('```agda\n_+_ : ℕ → ℕ → ℕ\nzero     + y = y\n(succ x) + y = succ(x + y)```')    
+        if (len(args) == 2) :
+            target = True
+            targetmodule = args[0]
+            function = args[1]
+        else :
+            function = args[0]
 
-        pattern = r"(" + re.escape(content) + r" : (.+\n)*)"
+        pattern = r"(" + re.escape(function) + r" : (.+\n)*)"
         print (pattern)
 
         regex = re.compile(pattern)
@@ -61,33 +63,53 @@ async def on_message(message):
 
         for module in agda :
 
-            result = []
+            if(not target or module[0] == targetmodule) :
 
-            result = re.search(regex, module[1])
+                result = []
 
-            if (result is not None) :
+                result = re.search(regex, module[1])
 
-                match = result.group(1)
+                if (result is not None) :
 
-                print("Found a match in " + module[0] + ":\n\n" + match)
-                matches.append((module[0], match))
+                    match = result.group(1)
 
+                    print("Found a match in " + module[0] + ":\n\n" + match)
+                    matches.append((module[0], match))
+
+                else :
+                    print("No matches in " + module[0])
             else :
-                print("No matches in " + module[0])
+                print("Not target module, skipping")
 
         if(len(matches) > 0) :
 
             print ("Matches!")
 
-            await message.channel.send("Found " + str(len(matches)) + " matches")
+            matchtext = ''
+
+            if not target :
+                if len(matches) == 1 :
+                    matchtext = "Found a match!"
+                else :
+                    matchtext = "Found " + str(len(matches)) + " matches!"
+            else :
+                matchtext = "Found a match!"
+
+            await message.channel.send(matchtext)
 
             for match in matches :
                 print (match)
-                reply = 'In `' + match[0] + '`:\n```agda\n' + match[1] + '```'
+                
+                reply = ""
+
+                if not target :
+                    reply = 'In `' + match[0] + '`:\n'
+                
+                reply = reply + '```agda\n' + match[1] + '```'
                 await message.channel.send(reply)
 
         else :
-            await message.channel.send("I couldn't find anything!")
+            await message.channel.send("No matches found!")
 
     if message.content.startswith('$proof'):
         await message.channel.send('```agda\npostulate proof : n > succ n\n```')
