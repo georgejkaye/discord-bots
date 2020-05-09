@@ -67,71 +67,120 @@ async def on_message(message):
 
         args = content.split()
 
-        target = False
+        error = False
 
-        if (len(args) == 2):
-            target = True
+        tlibrary = False
+        tmodule = False
+        if (len(args) == 5):
+            if(args[0] == "-l"):
+                tlibrary = True
+                targetlibrary = args[1]
+            elif(args[0] == "-m"):
+                tmodule = True
+                targetmodule = args[1]
+
+            if(args[2] == "-l"):
+                tlibrary = True
+                targetlibrary = args[3]
+            elif(args[2] == "-m"):
+                tmodule = True
+                targetmodule = args[3]
+
+            else:
+                error = True
+
+            function = args[4]
+
+        elif (len(args) == 4):
+            error = True
+
+        elif (len(args) == 3):
+
+            if(args[0] == "-l"):
+                tlibrary = True
+                targetlibrary = args[1]
+            elif(args[0] == "-m"):
+                tmodule = True
+                targetmodule = args[1]
+            else:
+                tmodule = True
+                tlibrary = True
+                targetlibrary = args[0]
+                targetmodule = args[1]
+
+            function = args[2]
+
+        elif (len(args) == 2):
+            tmodule = True
             targetmodule = args[0]
             function = args[1]
-        else:
+
+        elif (len(args) == 1):
             function = args[0]
 
-        pattern = r"(" + re.escape(function) + r" : (.+\n)*)"
-        print(pattern)
+        else:
+            error = True
 
-        regex = re.compile(pattern)
+        if (not error):
 
-        matches = []
+            pattern = r"(" + re.escape(function) + r" : (.+\n)*)"
+            print(pattern)
 
-        for module in agda:
+            regex = re.compile(pattern)
 
-            if(not target or targetmodule in module[modn]):
+            matches = []
 
-                result = []
+            for module in agda:
 
-                result = re.search(regex, module[srcn])
+                if((not tlibrary or targetlibrary == module[libn]) and (not tmodule or targetmodule in module[modn])):
 
-                if (result is not None):
+                    result = []
 
-                    match = result.group(1)
+                    result = re.search(regex, module[srcn])
 
-                    print("Found a match in " +
-                          module[libn] + ":" + module[modn])
-                    matches.append((module[libn], module[modn], match))
+                    if (result is not None):
 
+                        match = result.group(1)
+
+                        print("Found a match in " +
+                              module[libn] + ":" + module[modn])
+                        matches.append((module[libn], module[modn], match))
+
+                    else:
+                        print(module[libn] + ":" +
+                              module[modn] + ": no matches")
                 else:
                     print(module[libn] + ":" +
-                          module[modn] + ": no matches")
-            else:
-                print(module[libn] + ":" +
-                      module[modn] + ": not target module, skipping")
+                          module[modn] + ": not target module, skipping")
 
-        if(len(matches) > 0):
+            if(len(matches) > 0):
 
-            if len(matches) == 1:
-                reply = "Found a match!"
-            else:
-                reply = "Found " + str(len(matches)) + " matches!"
-
-            reply = reply + "\n"
-
-            for match in matches:
-                module = 'In `' + match[modn] + \
-                    '` from `' + match[libn] + '`:\n'
-
-                newfunction = module + '```agda\n' + match[srcn] + '```'
-                potentialreply = reply + "\n" + newfunction
-
-                if(len(potentialreply) > 2000):
-                    await message.channel.send(reply)
-                    reply = newfunction
+                if len(matches) == 1:
+                    reply = "Found a match!"
                 else:
-                    reply = reply + "\n" + newfunction
+                    reply = "Found " + str(len(matches)) + " matches!"
 
-            await message.channel.send(reply)
+                reply = reply + "\n"
 
+                for match in matches:
+                    module = 'In `' + match[modn] + \
+                        '` from `' + match[libn] + '`:\n'
+
+                    newfunction = module + '```agda\n' + match[srcn] + '```'
+                    potentialreply = reply + "\n" + newfunction
+
+                    if(len(potentialreply) > 2000):
+                        await message.channel.send(reply)
+                        reply = newfunction
+                    else:
+                        reply = reply + "\n" + newfunction
+
+                await message.channel.send(reply)
+
+            else:
+                await message.channel.send("No matches found!")
         else:
-            await message.channel.send("No matches found!")
+            await message.channel.send("I didn't understand what you said...")
 
     if message.content.startswith('$proof'):
         await message.channel.send('```agda\npostulate proof : n > succ n\n```')
