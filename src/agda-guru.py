@@ -16,7 +16,7 @@ with open('dirs') as dirfile:
 agda = []
 
 # Get the entire standard library
-for root, dirs, files in os.walk(dir):
+for root, dirs, files in os.walk(dirs):
     for file in files:
         if file.endswith('.agda'):
             with open(os.path.join(root, file), 'rt') as current:
@@ -99,16 +99,28 @@ async def on_message(message):
 
             await message.channel.send(matchtext)
 
+            reply = ""
+
             for match in matches:
                 print(match)
 
-                reply = ""
+                module = ""
 
                 if not target:
-                    reply = 'In `' + match[0] + '`:\n'
+                    module = 'In `' + match[0] + '`:\n'
 
-                reply = reply + '```agda\n' + match[1] + '```'
-                await message.channel.send(reply)
+                newfunction = module + '```agda\n' + match[1] + '```'
+                potentialreply = reply + newfunction
+
+                print(potentialreply)
+
+                if(len(potentialreply) > 2000):
+                    await message.channel.send(reply)
+                    reply = newfunction
+                else:
+                    reply = reply + newfunction
+
+            await message.channel.send(reply)
 
         else:
             await message.channel.send("No matches found!")
