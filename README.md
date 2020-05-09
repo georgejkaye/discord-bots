@@ -1,6 +1,6 @@
-#discord-bots
+# discord-bots
 
-A collection of discord bots.
+A collection of (one) discord bots.
 
 ## Agda Guru
 
