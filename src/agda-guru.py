@@ -6,21 +6,27 @@ import os
 client = discord.Client()
 emoji = client.get_emoji(689266841025380359)
 
+scriptpath = os.path.dirname(os.path.realpath(__file__))
+tokenpath = scriptpath + '/token'
+libspath = scriptpath + '/dirs'
+
 # Get the secret token from the token file
-with open('token') as tokenfile:
+with open(tokenpath) as tokenfile:
     token = tokenfile.read()
 
-with open('dirs') as dirfile:
-    dirs = dirfile.read()
+with open(libspath) as libfile:
+    libfolder = libfile.readline().rstrip()
 
 agda = []
 
 # Get the entire standard library
-for root, dirs, files in os.walk(dirs):
+for root, dirs, files in os.walk(libfolder):
+    print (root)
     for file in files:
         if file.endswith('.agda'):
             with open(os.path.join(root, file), 'rt') as current:
-                module = os.path.join(root, file)[22:-5].replace('/', '.')
+                module = os.path.join(root, file)[
+                    len(libfolder) + 1:-5].replace('/', '.')
                 agda.append((module, current.read()))
 
 
