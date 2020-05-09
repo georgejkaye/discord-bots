@@ -20,13 +20,8 @@ for root, dirs, files in os.walk(dirs):
     for file in files:
         if file.endswith('.agda'):
             with open(os.path.join(root, file), 'rt') as current:
-                print(os.path.join(root, file))
-
                 module = os.path.join(root, file)[22:-5].replace('/', '.')
                 agda.append((module, current.read()))
-
-for module in agda:
-    print(module[0])
 
 
 @client.event
@@ -78,47 +73,34 @@ async def on_message(message):
 
                     match = result.group(1)
 
-                    print("Found a match in " + module[0] + ":\n\n" + match)
+                    print("Found a match in " + module[0])
                     matches.append((module[0], match))
 
                 else:
-                    print("No matches in " + module[0])
+                    print(module[0] + ": no mathches")
             else:
-                print("Not target module, skipping")
+                print(module[0] + ": not target module, skipping")
 
         if(len(matches) > 0):
 
-            print("Matches!")
-
-            matchtext = ''
-
             if len(matches) == 1:
-                matchtext = "Found a match!"
+                reply = "Found a match!"
             else:
-                matchtext = "Found " + str(len(matches)) + " matches!"
+                reply = "Found " + str(len(matches)) + " matches!"
 
-            await message.channel.send(matchtext)
-
-            reply = ""
+            reply = reply + "\n"
 
             for match in matches:
-                print(match)
-
-                module = ""
-
-                if not target:
-                    module = 'In `' + match[0] + '`:\n'
+                module = 'In `' + match[0] + '`:\n'
 
                 newfunction = module + '```agda\n' + match[1] + '```'
-                potentialreply = reply + newfunction
-
-                print(potentialreply)
+                potentialreply = reply + "\n" + newfunction
 
                 if(len(potentialreply) > 2000):
                     await message.channel.send(reply)
                     reply = newfunction
                 else:
-                    reply = reply + newfunction
+                    reply = reply + "\n" + newfunction
 
             await message.channel.send(reply)
 
