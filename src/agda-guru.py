@@ -7,28 +7,33 @@ client = discord.Client()
 emoji = client.get_emoji(689266841025380359)
 
 # Get the secret token from the token file
-with open ('token') as tokenfile :
+with open('token') as tokenfile:
     token = tokenfile.read()
+
+with open('dirs') as dirfile:
+    dirs = dirfile.read()
 
 agda = []
 
 # Get the entire standard library
-for root, dirs, files in os.walk('../../agda-stdlib/src') :
-    for file in files :
-        if file.endswith('.agda') :
-            with open(os.path.join(root,file), 'rt') as current :
-                print (os.path.join(root,file))
+for root, dirs, files in os.walk(dir):
+    for file in files:
+        if file.endswith('.agda'):
+            with open(os.path.join(root, file), 'rt') as current:
+                print(os.path.join(root, file))
 
-                module = os.path.join(root,file)[22:-5].replace('/','.')
+                module = os.path.join(root, file)[22:-5].replace('/', '.')
                 agda.append((module, current.read()))
 
-for module in agda :
+for module in agda:
     print(module[0])
+
 
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
     await client.change_presence(activity=discord.Game(name='Agda 2.6.1'))
+
 
 @client.event
 async def on_message(message):
@@ -47,65 +52,65 @@ async def on_message(message):
 
         target = False
 
-        if (len(args) == 2) :
+        if (len(args) == 2):
             target = True
             targetmodule = args[0]
             function = args[1]
-        else :
+        else:
             function = args[0]
 
         pattern = r"(" + re.escape(function) + r" : (.+\n)*)"
-        print (pattern)
+        print(pattern)
 
         regex = re.compile(pattern)
 
         matches = []
 
-        for module in agda :
+        for module in agda:
 
-            if(not target or targetmodule in module[0]) :
+            if(not target or targetmodule in module[0]):
 
                 result = []
 
                 result = re.search(regex, module[1])
 
-                if (result is not None) :
+                if (result is not None):
 
                     match = result.group(1)
 
                     print("Found a match in " + module[0] + ":\n\n" + match)
                     matches.append((module[0], match))
 
-                else :
+                else:
                     print("No matches in " + module[0])
-            else :
+            else:
                 print("Not target module, skipping")
 
-        if(len(matches) > 0) :
+        if(len(matches) > 0):
 
-            print ("Matches!")
+            print("Matches!")
 
             matchtext = ''
 
-            if len(matches) == 1 :
+            if len(matches) == 1:
                 matchtext = "Found a match!"
-            else :
+            else:
                 matchtext = "Found " + str(len(matches)) + " matches!"
 
             await message.channel.send(matchtext)
 
-            for match in matches :
-                print (match)
-                
+            for match in matches:
+                print(match)
+
                 reply = ""
 
-                if not target :
+                if not target:
                     reply = 'In `' + match[0] + '`:\n'
-                
+
                 reply = reply + '```agda\n' + match[1] + '```'
                 await message.channel.send(reply)
 
-        else :
+        else:
             await message.channel.send("No matches found!")
 
     if message.content.startswith('$proof'):
@@ -113,7 +118,7 @@ async def on_message(message):
 
     if message.content.startswith('$timeline'):
 
-        content = message.content.decode("utf8");      
+        content = message.content.decode("utf8")
         await message.channel.send('You are in the **darkest** timeline...')
 
 client.run(token)
