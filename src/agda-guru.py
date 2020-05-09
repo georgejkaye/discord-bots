@@ -6,6 +6,11 @@ import os
 client = discord.Client()
 emoji = client.get_emoji(689266841025380359)
 
+# structure of module tuple
+libn = 0
+modn = 1
+srcn = 2
+
 scriptpath = os.path.dirname(os.path.realpath(__file__))
 tokenpath = scriptpath + '/token'
 libspath = scriptpath + '/dirs'
@@ -15,19 +20,30 @@ with open(tokenpath) as tokenfile:
     token = tokenfile.read()
 
 with open(libspath) as libfile:
-    libfolder = libfile.readline().rstrip()
+    libs = libfile.readlines()
 
 agda = []
 
-# Get the entire standard library
-for root, dirs, files in os.walk(libfolder):
-    print (root)
-    for file in files:
-        if file.endswith('.agda'):
-            with open(os.path.join(root, file), 'rt') as current:
-                module = os.path.join(root, file)[
-                    len(libfolder) + 1:-5].replace('/', '.')
-                agda.append((module, current.read()))
+for lib in libs:
+
+    # get the name of the library and its path
+    libpair = lib.strip().split(':')
+    libname = libpair[0]
+    libpath = libpair[1]
+
+    # Get the source of each library file
+    for root, dirs, files in os.walk(libpath):
+        print (root)
+        for file in files:
+            if file.endswith('.agda') or file.endswith('.lagda'):
+                with open(os.path.join(root, file), 'rt') as current:
+
+                    modulepath = os.path.splitext(os.path.join(root, file))[0]
+
+                    module = modulepath[
+                        len(libpath) + 1:].replace('/', '.')
+
+                    agda.append((libname, module, current.read()))
 
 
 @client.event
@@ -69,23 +85,26 @@ async def on_message(message):
 
         for module in agda:
 
-            if(not target or targetmodule in module[0]):
+            if(not target or targetmodule in module[modn]):
 
                 result = []
 
-                result = re.search(regex, module[1])
+                result = re.search(regex, module[srcn])
 
                 if (result is not None):
 
                     match = result.group(1)
 
-                    print("Found a match in " + module[0])
-                    matches.append((module[0], match))
+                    print("Found a match in " +
+                          module[libn] + ":" + module[modn])
+                    matches.append((module[libn], module[modn], match))
 
                 else:
-                    print(module[0] + ": no mathches")
+                    print(module[libn] + ":" +
+                          module[modn] + ": no matches")
             else:
-                print(module[0] + ": not target module, skipping")
+                print(module[libn] + ":" +
+                      module[modn] + ": not target module, skipping")
 
         if(len(matches) > 0):
 
@@ -97,9 +116,10 @@ async def on_message(message):
             reply = reply + "\n"
 
             for match in matches:
-                module = 'In `' + match[0] + '`:\n'
+                module = 'In `' + match[modn] + \
+                    '` from `' + match[libn] + '`:\n'
 
-                newfunction = module + '```agda\n' + match[1] + '```'
+                newfunction = module + '```agda\n' + match[srcn] + '```'
                 potentialreply = reply + "\n" + newfunction
 
                 if(len(potentialreply) > 2000):
