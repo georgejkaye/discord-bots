@@ -27,7 +27,8 @@ You can also use flags to explicitly state what the arguments are (to use them i
 * `-m` Specify a module
 
 ### Example
-```
+
+```bash
 $agda -l agda-stdlib -m Data.Nat +-comm
 ```
 
