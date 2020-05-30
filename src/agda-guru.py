@@ -3,6 +3,19 @@ import re
 import glob
 import os
 
+func = 0
+data = 1
+record = 2
+
+
+class Function:
+    def __init__(self, type, name, signature, source):
+        self.type = type
+        self.name = name
+        self.signature = signature
+        self.source = source
+
+
 client = discord.Client()
 emoji = client.get_emoji(689266841025380359)
 
@@ -14,6 +27,9 @@ srcn = 2
 scriptpath = os.path.dirname(os.path.realpath(__file__))
 tokenpath = scriptpath + '/token'
 libspath = scriptpath + '/dirs'
+
+pattern = r"(?:data (.+?)|record (.+?)|(.+?)) : (?:(?:.+?\n)*? where|((?:.+?\n)*?)).+? = ((?:.+\n)*)"
+regex = re.compile(pattern)
 
 # Get the secret token from the token file
 with open(tokenpath) as tokenfile:
@@ -33,7 +49,7 @@ for lib in libs:
 
     # Get the source of each library file
     for root, dirs, files in os.walk(libpath):
-        print (root)
+        print(root)
         for file in files:
             if file.endswith('.agda') or file.endswith('.lagda'):
                 with open(os.path.join(root, file), 'rt') as current:
@@ -43,7 +59,28 @@ for lib in libs:
                     module = modulepath[
                         len(libpath) + 1:].replace('/', '.')
 
-                    agda.append((libname, module, current.read()))
+                    source = current.read()
+
+                    matches = re.finditer(pattern, source)
+
+                    functions = []
+
+                    for match in matches:
+                        groups = match.groups()
+
+                        if match.group(1) is not None:
+                            funtype = data
+                        elif match.group(2) is not None:
+                            funtype = record
+                        else:
+                            funtype = func
+
+                        function = Function(funtype, match.group(
+                            3), match.group(4), match.group(0))
+
+                        functions.append(function)
+
+                    agda.append((libname, module, functions))
 
 
 @client.event
@@ -55,6 +92,20 @@ async def on_ready():
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+
+    if message.content.startswith('$proof'):
+        await message.channel.send('```agda\npostulate proof : n > succ n\n```')
+        return
+
+    if message.content.startswith('$timeline'):
+
+        content = message.content.decode("utf8")
+        await message.channel.send('You are in the **darkest** timeline...')
+        return
+
+    if message.content.startswith('Ah!') or message.content.startswith("ah!"):
+        await message.channel.send('Ah!')
         return
 
     if message.content.startswith('$agda'):
@@ -123,71 +174,52 @@ async def on_message(message):
 
         if (not error):
 
-            pattern = r"(" + re.escape(function) + r" : (.+\n)*)"
-            print(pattern)
-
-            regex = re.compile(pattern)
-
             matches = []
 
             for module in agda:
 
                 if((not tlibrary or targetlibrary == module[libn]) and (not tmodule or targetmodule in module[modn])):
 
-                    result = []
-
-                    result = re.search(regex, module[srcn])
-
-                    if (result is not None):
-
-                        match = result.group(1)
-
-                        print("Found a match in " +
-                              module[libn] + ":" + module[modn])
-                        matches.append((module[libn], module[modn], match))
-
-                    else:
-                        print(module[libn] + ":" +
-                              module[modn] + ": no matches")
-                else:
-                    print(module[libn] + ":" +
-                          module[modn] + ": not target module, skipping")
-
-            if(len(matches) > 0):
-
-                if len(matches) == 1:
-                    reply = "Found a match!"
-                else:
-                    reply = "Found " + str(len(matches)) + " matches!"
-
-                reply = reply + "\n"
-
-                for match in matches:
-                    module = 'In `' + match[modn] + \
-                        '` from `' + match[libn] + '`:\n'
-
-                    newfunction = module + '```agda\n' + match[srcn] + '```'
-                    potentialreply = reply + "\n" + newfunction
-
-                    if(len(potentialreply) > 2000):
-                        await message.channel.send(reply)
-                        reply = newfunction
-                    else:
-                        reply = reply + "\n" + newfunction
-
-                await message.channel.send(reply)
-
-            else:
-                await message.channel.send("No matches found!")
+                    for func in module[srcn]:
+                        if (func.name is not None and function in func.name):
+                            matches.append(
+                                (module[libn], module[modn], func.source))
+                            break
         else:
             await message.channel.send("I didn't understand what you said...")
 
-    if message.content.startswith('$proof'):
-        await message.channel.send('```agda\npostulate proof : n > succ n\n```')
+    if message.content.startswith('$type'):
+        await message.add_reaction(client.get_emoji(689266841025380359))
 
-    if message.content.startswith('$timeline'):
+        content = message.content[6:]
 
-        content = message.content.decode("utf8")
-        await message.channel.send('You are in the **darkest** timeline...')
+        args = content.split()
+
+    if(len(matches) > 0):
+
+        if len(matches) == 1:
+            reply = "Found a match!"
+        else:
+            reply = "Found " + str(len(matches)) + " matches!"
+
+        reply = reply + "\n"
+
+        for match in matches:
+            module = 'In `' + match[modn] + \
+                '` from `' + match[libn] + '`:\n'
+
+            newfunction = module + '```agda\n' + match[srcn] + '```'
+            potentialreply = reply + "\n" + newfunction
+
+            if(len(potentialreply) > 2000):
+                await message.channel.send(reply)
+                reply = newfunction
+            else:
+                reply = reply + "\n" + newfunction
+
+        await message.channel.send(reply)
+
+    else:
+        await message.channel.send("No matches found!")
 
 client.run(token)
