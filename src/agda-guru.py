@@ -76,7 +76,7 @@ for lib in libs:
                             funtype = func
 
                         function = Function(funtype, match.group(
-                            3), match.group(4), match.group(0))
+                            3), match.group(4)[:-1].split(" → "), match.group(0))
 
                         functions.append(function)
 
@@ -107,6 +107,8 @@ async def on_message(message):
     if message.content.startswith('Ah!') or message.content.startswith("ah!"):
         await message.channel.send('Ah!')
         return
+
+    matches = []
 
     if message.content.startswith('$agda'):
 
@@ -174,8 +176,6 @@ async def on_message(message):
 
         if (not error):
 
-            matches = []
-
             for module in agda:
 
                 if((not tlibrary or targetlibrary == module[libn]) and (not tmodule or targetmodule in module[modn])):
@@ -193,7 +193,25 @@ async def on_message(message):
 
         content = message.content[6:]
 
-        args = content.split()
+        args = content.split(" -> ")
+
+        if "N" in args:
+            newargs = []
+            for arg in args:
+                if arg == "N":
+                    newargs.append("ℕ")
+                else:
+                    newargs.append(arg)
+            args = newargs
+
+        print(args)
+
+        for module in agda:
+
+            for func in module[srcn]:
+                if(args == func.signature):
+                    matches.append((module[libn], module[modn], func.source))
+                    break
 
     if(len(matches) > 0):
 
@@ -205,8 +223,9 @@ async def on_message(message):
         reply = reply + "\n"
 
         for match in matches:
-            module = 'In `' + match[modn] + \
-                '` from `' + match[libn] + '`:\n'
+            module = 'In `' + match[modn] + '` from `' + match[libn] + '`:\n'
+
+            print(match[srcn])
 
             newfunction = module + '```agda\n' + match[srcn] + '```'
             potentialreply = reply + "\n" + newfunction
