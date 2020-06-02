@@ -42,6 +42,8 @@ agda = []
 
 for lib in libs:
 
+    print(lib)
+
     # get the name of the library and its path
     libpair = lib.strip().split(':')
     libname = libpair[0]
@@ -109,6 +111,8 @@ async def on_message(message):
         return
 
     matches = []
+
+    search = False
 
     if message.content.startswith('$agda'):
 
@@ -185,6 +189,9 @@ async def on_message(message):
                             matches.append(
                                 (module[libn], module[modn], func.source))
                             break
+        
+            search = True
+
         else:
             await message.channel.send("I didn't understand what you said...")
 
@@ -212,6 +219,8 @@ async def on_message(message):
                 if(args == func.signature):
                     matches.append((module[libn], module[modn], func.source))
                     break
+        
+        search = True
 
     if(len(matches) > 0):
 
@@ -238,7 +247,7 @@ async def on_message(message):
 
         await message.channel.send(reply)
 
-    else:
+    elif search :
         await message.channel.send("No matches found!")
 
 client.run(token)
